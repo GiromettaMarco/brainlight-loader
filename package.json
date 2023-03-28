@@ -1,0 +1,25 @@
+{
+  "name": "brainlight-loader",
+  "version": "1.0.0",
+  "description": "Load Brainlight templates for webpack",
+  "main": "dist/loader.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GiromettaMarco/brainlight-loader.git"
+  },
+  "keywords": [
+    "brainlight",
+    "loader",
+    "webpack",
+    "templating"
+  ],
+  "author": "Girometta Marco",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/GiromettaMarco/brainlight-loader/issues"
+  },
+  "homepage": "https://github.com/GiromettaMarco/brainlight-loader#readme"
+}

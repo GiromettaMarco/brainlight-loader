@@ -221,7 +221,8 @@ class Inclusion {
         const matches = statement.match(this.regex);
 
         if (matches) {
-            return new Extension(matches[2], new Assignments(matches[3] ?? '').compiled, matches[1]);
+            const assignments = new Assignments(matches[3] ?? '');
+            return new Extension(matches[2], assignments.compiled, matches[1]);
         }
 
         console.warn('Template syntax error. Tag: {{&}}. Statement: "' + statement + '"');
@@ -239,11 +240,13 @@ class Loop {
         const matches = statement.match(this.regex);
 
         if (matches) {
+            const context = new Context(matches[1]);
+
             if (matches[2]) {
-                return this.foreach((new Context(matches[1])).compiled, matches[2], matches[3] ?? '');
+                return this.foreach(context.compiled, matches[2], matches[3] ?? '');
             }
 
-            return this.for((new Context(matches[1])).compiled);
+            return this.for(context.compiled);
         }
 
         console.warn('Template syntax error. Tag: {{#}}. Statement: "' + statement + '"');
@@ -292,36 +295,38 @@ class Slot {
 }
 
 class Variable {
-    constructor(statement, escape = true) {
-        this.compiled = '';
-        this.escape = escape;
-        this.compile(statement);
-    }
-
-    compile(statement) {
-        const context = (new Context(statement)).compiled;
+    compile(statement, escape = true) {
+        const context = new Context(statement);
 
         if (context !== '') {
-            this.start();
-            this.compiled += context;
-            this.stop();
+            return this.prepend(escape) + context.compiled + this.append(escape);
         }
+
+        return '';
     }
 
-    start() {
-        this.compiled += 'text += ';
+    prepend(escape = true) {
+        let compiled = 'text += ';
 
-        if (this.escape) {
-            this.compiled += '__brain.escape(';
+        if (escape) {
+            compiled += '__brain.escape(';
         }
+
+        return compiled;
     }
 
-    stop() {
-        if (this.escape) {
-            this.compiled += ')';
+    append(escape = true) {
+        let compiled = '';
+
+        if (escape) {
+            compiled += ')';
         }
 
-        this.compiled += '; ';
+        return compiled += '; ';
+    }
+
+    print(statement, escape = true) {
+        return this.compile(statement, escape);
     }
 }
 
@@ -332,12 +337,13 @@ class Compiler {
         this.extending = null;
         this.compiled = 'let text = ""; ';
 
+        this.variable = new Variable();
         this.condition = new Condition();
         this.loop = new Loop();
         this.inclusion = new Inclusion();
         this.slot = new Slot();
 
-        this.tokens = string.split(/({{)\s*([\S\s]*?)\s*(}})/);
+        this.tokens = string.split(/({{)\s*(.*?)\s*(}})/);
         this.tokens.forEach(this.compileToken, this);
 
         this.appendExtension();
@@ -369,11 +375,11 @@ class Compiler {
 
         switch (matches[1]) {
             case undefined:
-                this.compiled += (new Variable(matches[2])).compiled;
+                this.compiled += this.variable.print(matches[2]);
                 break;
 
             case '!':
-                this.compiled += (new Variable(matches[2], false)).compiled;
+                this.compiled += this.variable.print(matches[2], false);
                 break;
 
             case '?':

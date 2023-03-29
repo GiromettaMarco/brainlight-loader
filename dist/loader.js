@@ -78,14 +78,66 @@ class Context {
     }
 }
 
-class Condition {
-    open(statement) {
-        const context = new Context(statement, true);
-        return 'if (typeof ' + context.variable + ' !== "undefined" && __brain.isTrue(' + context.compiled + ')) { ';
+class Assignment {
+    static regex;
+
+    static makeVariable(matches) {
+        throw new Error("Method 'makeVariable(matches)' must be implemented.");
     }
 
-    close() {
-        return '} ';
+    static compile(token, last = false) {
+        let compiled = '';
+
+        const matches = token.match(this.regex);
+
+        if (matches) {
+            compiled += this.makeVariable(matches);
+
+            if (! last) {
+                compiled += ', ';
+            }
+        }
+
+        return compiled;
+    }
+}
+
+class Constant extends Assignment {
+    static regex = /^([a-zA-Z0-9_]+)=([0-9.]*|true|false)$/;
+
+    static makeVariable(matches) {
+        return '"' + matches[1] + '": ' + matches[2];
+    }
+}
+
+class Shorthand extends Assignment {
+    static regex = /^:([a-zA-Z0-9_]+)$/;
+
+    static makeVariable(matches) {
+        return '"' + matches[1] + '": ' + matches[1];
+    }
+}
+
+class Text extends Assignment {
+    static regex = /^([a-zA-Z0-9_]+)="([^"]*)"$/;
+
+    static makeVariable(matches) {
+        return '"' + matches[1] + '": "' + escapeCode(matches[2]) + '"';
+    }
+}
+
+class Variable extends Assignment {
+    static regex = /^:([a-zA-Z0-9_]+)=(.+)$/;
+
+    static makeVariable(matches) {
+        const context = new Context(matches[2]);
+
+        if (context.compiled === '') {
+            console.warn('Template syntax error. Invalide assignment: \'' + matches[0] + '\'');
+            return '';
+        }
+
+        return '"' + matches[1] + '": ' + context.compiled;
     }
 }
 
@@ -102,101 +154,84 @@ class Assignments {
         this.compiled = '{';
 
         this.tokens.forEach((token, index) => {
-            this.compileToken(token, (index === this.tokens.length - 1));
+            this.compiled += this.compileToken(token, (index === this.tokens.length - 1));
         });
 
         this.compiled += '}';
     }
 
     compileToken(token, last = false) {
-        if (
-            this.compileShorthand(token, last) ||
-            this.compileVariable(token, last) ||
-            this.compileString(token, last) ||
-            this.compileBoolAndNumb(token, last)
-        ) {
-            return true;
-        }
-        return false;
-    }
-
-    compileShorthand(token, last = false) {
-        const matches = token.match(/^:([a-zA-Z0-9_]+)$/);
-
-        if (matches) {
-            this.compiled += '"' + matches[1] + '": ' + matches[1];
-
-            if (! last) {
-                this.compiled += ', ';
-            }
-
-            return true;
+        const shorthand = Shorthand.compile(token, last);
+        if (shorthand) {
+            return shorthand;
         }
 
-        return false;
-    }
-
-    compileVariable(token, last = false) {
-        const matches = token.match(/^:([a-zA-Z0-9_]+)=(.+)$/);
-
-        if (matches) {
-            const context = new Context(matches[2]);
-            if (context.compiled === '') {
-                console.warn('Template syntax error. Invalide assignment: \'' + token + '\'');
-                return false;
-            }
-
-            this.compiled += '"' + matches[1] + '": ' + context.compiled;
-
-            if (! last) {
-                this.compiled += ', ';
-            }
-
-            return true;
+        const variable = Variable.compile(token, last);
+        if (variable) {
+            return variable;
         }
 
-        return false;
-    }
-
-    compileString(token, last = false) {
-        const matches = token.match(/^([a-zA-Z0-9_]+)="([^"]*)"$/);
-
-        if (matches) {
-            this.compiled += '"' + matches[1] + '": "' + escapeCode(matches[2]) + '"';
-
-            if (! last) {
-                this.compiled += ', ';
-            }
-
-            return true;
+        const text = Text.compile(token, last);
+        if (text) {
+            return text;
         }
 
-        return false;
-    }
-
-    compileBoolAndNumb(token, last = false) {
-        const matches = token.match(/^([a-zA-Z0-9_]+)=([0-9.]*|true|false)$/);
-
-        if (matches) {
-            this.compiled += '"' + matches[1] + '": ' + matches[2];
-
-            if (! last) {
-                this.compiled += ', ';
-            }
-
-            return true;
+        const constant = Constant.compile(token, last);
+        if (constant) {
+            return constant;
         }
 
-        return false;
+        return '';
     }
 }
 
-class Inclusion {
-    constructor() {
-        this.regex = /^(\+?)\s*([a-zA-Z0-9_\-.]+)(?:\s+([\S\s]*))?$/;
+class Tag {
+    //
+}
+
+class SingleTag extends Tag {
+    static compile(statement) {
+        throw new Error("Method 'compile(statement)' must be implemented.");
+    }
+}
+
+class BlockTag extends Tag {
+    static open(statement) {
+        throw new Error("Method 'open(statement)' must be implemented.");
     }
 
-    partial(statement) {
+    static close() {
+        throw new Error("Method 'close()' must be implemented.");
+    }
+}
+
+class Condition extends BlockTag {
+    static open(statement) {
+        const context = new Context(statement, true);
+        return 'if (typeof ' + context.variable + ' !== "undefined" && __brain.isTrue(' + context.compiled + ')) { ';
+    }
+
+    static close() {
+        return '} ';
+    }
+}
+
+class Escaped extends SingleTag {
+    static compile(statement) {
+        const context = new Context(statement);
+
+        if (context !== '') {
+            return 'text += __brain.escape(' + context.compiled + '); ';
+        }
+
+        return '';
+    }
+}
+
+class Inclusion extends SingleTag {
+    static regex = /^(\+?)\s*([a-zA-Z0-9_\-.]+)(?:\s+([\S\s]*))?$/;
+
+    static compile(statement) {
         const matches = statement.match(this.regex);
 
         if (matches) {
@@ -217,7 +252,7 @@ class Inclusion {
         return '';
     }
 
-    getExtension(statement) {
+    static getExtension(statement) {
         const matches = statement.match(this.regex);
 
         if (matches) {
@@ -230,11 +265,31 @@ class Inclusion {
     }
 }
 
-class Loop {
-    constructor() {
-        this.regex = /^([a-zA-Z0-9_>\s]+?)(?:\s+@\s+([a-zA-Z0-9_]+)(?:\s*>\s*([a-zA-Z0-9_]+))?)?$/;
-        this.stack = [];
+class Slot extends BlockTag {
+    static open(statement) {
+        return '__brain.slots.make("' + statement + '", (() => { let text = ""; ';
     }
+
+    static close() {
+        return 'return text; })()); ';
+    }
+}
+
+class Unescaped extends SingleTag {
+    static compile(statement) {
+        const context = new Context(statement);
+
+        if (context !== '') {
+            return 'text += ' + context.compiled + '; ';
+        }
+
+        return '';
+    }
+}
+
+class Loop extends Tag {
+    regex = /^([a-zA-Z0-9_>\s]+?)(?:\s+@\s+([a-zA-Z0-9_]+)(?:\s*>\s*([a-zA-Z0-9_]+))?)?$/;
+    stack = [];
 
     open(statement) {
         const matches = statement.match(this.regex);
@@ -284,51 +339,7 @@ class Loop {
     }
 }
 
-class Slot {
-    open(slotName) {
-        return '__brain.slots.make("' + slotName + '", (() => { let text = ""; ';
-    }
-
-    close() {
-        return 'return text; })()); ';
-    }
-}
-
-class Variable {
-    compile(statement, escape = true) {
-        const context = new Context(statement);
-
-        if (context !== '') {
-            return this.prepend(escape) + context.compiled + this.append(escape);
-        }
-
-        return '';
-    }
-
-    prepend(escape = true) {
-        let compiled = 'text += ';
-
-        if (escape) {
-            compiled += '__brain.escape(';
-        }
-
-        return compiled;
-    }
-
-    append(escape = true) {
-        let compiled = '';
-
-        if (escape) {
-            compiled += ')';
-        }
-
-        return compiled += '; ';
-    }
-
-    print(statement, escape = true) {
-        return this.compile(statement, escape);
-    }
-}
+const loop = new Loop();
 
 class Compiler {
     constructor(string, filename = null) {
@@ -337,13 +348,7 @@ class Compiler {
         this.extending = null;
         this.compiled = 'let text = ""; ';
 
-        this.variable = new Variable();
-        this.condition = new Condition();
-        this.loop = new Loop();
-        this.inclusion = new Inclusion();
-        this.slot = new Slot();
-
-        this.tokens = string.split(/({{)\s*(.*?)\s*(}})/);
+        this.tokens = string.split(/({{)\s*([\S\s]*?)\s*(}})/);
         this.tokens.forEach(this.compileToken, this);
 
         this.appendExtension();
@@ -375,43 +380,43 @@ class Compiler {
 
         switch (matches[1]) {
             case undefined:
-                this.compiled += this.variable.print(matches[2]);
+                this.compiled += Escaped.compile(matches[2]);
                 break;
 
             case '!':
-                this.compiled += this.variable.print(matches[2], false);
+                this.compiled += Unescaped.compile(matches[2]);
                 break;
 
             case '?':
-                this.compiled += this.condition.open(matches[2]);
+                this.compiled += Condition.open(matches[2]);
                 break;
 
             case '/?':
-                this.compiled += this.condition.close();
+                this.compiled += Condition.close();
                 break;
 
             case '#':
-                this.compiled += this.loop.open(matches[2]);
+                this.compiled += loop.open(matches[2]);
                 break;
 
             case '/#':
-                this.compiled += this.loop.close();
+                this.compiled += loop.close();
                 break;
 
             case '>':
-                this.compiled += this.inclusion.partial(matches[2]);
+                this.compiled += Inclusion.compile(matches[2]);
                 break;
 
             case '&':
-                this.extending = this.inclusion.getExtension(matches[2]);
+                this.extending = Inclusion.getExtension(matches[2]);
                 break;
 
             case '$':
-                this.compiled += this.slot.open(matches[2]);
+                this.compiled += Slot.open(matches[2]);
                 break;
 
             case '/$':
-                this.compiled += this.slot.close();
+                this.compiled += Slot.close();
                 break;
         
             default:

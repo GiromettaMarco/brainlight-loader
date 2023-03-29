@@ -21,5 +21,8 @@
   "bugs": {
     "url": "https://github.com/GiromettaMarco/brainlight-loader/issues"
   },
-  "homepage": "https://github.com/GiromettaMarco/brainlight-loader#readme"
+  "homepage": "https://github.com/GiromettaMarco/brainlight-loader#readme",
+  "directories": {
+    "lib": "lib"
+  }
 }

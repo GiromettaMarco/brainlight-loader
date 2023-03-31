@@ -19,15 +19,7 @@ class Extension {
     }
 
     compile() {
-        let code = 'text +=  __brain.';
-
-        if (this.advanced) {
-            code += 'includeExtensionWithLogic';
-        } else {
-            code += 'includeExtension';
-        }
-
-        return code += "('" + this.template + "', " + this.data + "); ";
+        return 'text +=  __brain.includeExtension("' + this.template + '", ' + this.data + ', ' + (this.advanced === '+') + '); ';
     }
 
 }
@@ -237,15 +229,9 @@ class Inclusion extends SingleTag {
         if (matches) {
             const data = (typeof matches[3] !== 'undefined') ? (new Assignments(matches[3])).compiled : '{}';
 
-            let compiled = 'text += __brain.';
+            // const logic = (matches[1] !== '') ? 'true' : 'false';
 
-            if (matches[1] !== '') {
-                compiled += 'includePartialWithLogic';
-            } else {
-                compiled += 'includePartial';
-            }
-
-            return compiled += '("' + matches[2] + '", ' + data + '); ';
+            return 'text += __brain.includePartial("' + matches[2] + '", ' + data + ', ' + (matches[1] !== '') + '); ';
         }
 
         console.warn('Template syntax error. Tag: {{>}}. Statement: "' + statement + '"');

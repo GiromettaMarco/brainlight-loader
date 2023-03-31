@@ -1,0 +1,9 @@
+/.fleet
+/.idea
+/.vscode
+.phpstorm.meta.php
+_ide_helper.php
+/nbproject
+/.vs
+/node_modules
+.gitattributes

@@ -2,7 +2,7 @@
 
 [Brainlight](https://github.com/GiromettaMarco/brainlight) is a lightweight templating system with minimal logic pattern.
 
-This npm package allows to compile and render Brainlight Templates in a JavaScript environment. It makes use of a webpack loader to compile templates and a template engine for rendering.
+This npm package allows to compile and render Brainlight templates in a JavaScript environment. It makes use of a webpack loader to compile templates and a template engine for rendering.
 
 - [Requirements](#requirements)
 - [Installation](#installation)
@@ -25,7 +25,7 @@ npm i brainlight-loader
 
 ## Basic Usage
 
-Add the loader to your webpack config. For example:
+Add a ```brainlight-loader``` rule to your webpack config. For example:
 
 ```js
 module: {
@@ -38,13 +38,13 @@ module: {
 }
 ```
 
-Import the Brainlight engine into your JS:
+Import the Brainlight engine into your script:
 
 ```js
 import { Engine as BrainlightEngine } from 'brainlight-loader/lib/engine';
 ```
 
-Make a new engine instance and pass it your template directory by using the webpack ```require.context()``` function:
+Make a new engine instance and pass your templates directory to it by using the webpack ```require.context()``` function:
 
 ```js
 const brain = new BrainlightEngine({
@@ -65,7 +65,7 @@ Make reference to the [Brainlight documentation](https://github.com/GiromettaMar
 
 ## RenderHTML
 
-If your templates is wrapped in a single HTML node, you can use ```renderHTML()``` function to render the template as an ```Element``` object instead of a string:
+If your template is wrapped in a single HTML element, you can use ```renderHTML()``` function to render the template as an ```Element``` object instead of a string:
 
 ```js
 brain.renderHTML('button', {
@@ -153,7 +153,7 @@ The Engine constructor supports the following options:
 
 ### webpackContext
 
-A reference to the template directory using the webpack ```require.context()``` function.
+A reference to the templates directory using the webpack ```require.context()``` function.
 
 This field is mandatory.
 
@@ -167,14 +167,14 @@ This field is required when loading templates with additional logic.
 
 The file extension of templates (without ```.``` (dot)).
 
-By default is set to ```brain```.
+By default it is set to ```brain```.
 
 ### logicExtension
 
 The file extension of logic scripts (without ```.``` (dot)).
 
-By default is set to ```js```.
+By default it is set to ```js```.
 
 ## License
 
-Brainlight PHP is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT)
+Brainlight Loader is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT)

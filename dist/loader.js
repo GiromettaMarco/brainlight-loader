@@ -229,8 +229,6 @@ class Inclusion extends SingleTag {
         if (matches) {
             const data = (typeof matches[3] !== 'undefined') ? (new Assignments(matches[3])).compiled : '{}';
 
-            // const logic = (matches[1] !== '') ? 'true' : 'false';
-
             return 'text += __brain.includePartial("' + matches[2] + '", ' + data + ', ' + (matches[1] !== '') + '); ';
         }
 

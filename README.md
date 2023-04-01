@@ -8,7 +8,7 @@ This npm package allows to compile and render Brainlight templates in a JavaScri
 - [Installation](#installation)
 - [Basic Usage](#basic-usage)
 - [RenderHTML](#renderhtml)
-- [Extra logic](#extra-logic)
+- [Additional logic](#additional-logic)
 - [Options](#options)
 - [License](#license)
 
@@ -73,9 +73,9 @@ brain.renderHTML('button', {
 });
 ```
 
-## Extra logic
+## Additional logic
 
-Brainlight Loader supports templates with extra logic.
+Brainlight Loader supports templates with additional logic.
 
 First pass your logic scripts directory to the engine constructor by using the webpack ```require.context()``` function:
 
